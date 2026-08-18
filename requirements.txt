@@ -1,0 +1,3 @@
+# Kanban Lite — dependencias
+# Solo se usan módulos de la librería estándar (tkinter, sqlite3).
+# No hay dependencias externas que instalar.
