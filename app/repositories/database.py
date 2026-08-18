@@ -4,7 +4,7 @@ import sqlite3
 from pathlib import Path
 
 
-DATABASE_PATH = Path(__file__).resolve().parent.parent.parent / "kanban_lite.db"
+DATABASE_PATH = Path(__file__).resolve().parent.parent.parent / "db/kanban_lite.db"
 
 
 def obtener_conexion() -> sqlite3.Connection:
@@ -20,7 +20,7 @@ def inicializar_base_de_datos() -> None:
     try:
         conn.execute(
             """
-            CREATE TABLE IF NOT EXISTS tarjetas (
+            CREATE TABLE IF NOT EXISTS tarjeta (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 titulo TEXT NOT NULL,
                 descripcion TEXT NOT NULL DEFAULT '',

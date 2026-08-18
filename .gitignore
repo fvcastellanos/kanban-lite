@@ -212,3 +212,4 @@ tramp
 .envrc
 
 .vscode/
+*.db

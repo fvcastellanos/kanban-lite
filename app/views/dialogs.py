@@ -19,6 +19,7 @@ COLOR_TEXTO_LABEL = "#172B4D"
 COLOR_BORDE_INPUT = "#DFE1E6"
 COLOR_FONDO_INPUT = "#FFFFFF"
 COLOR_TEXTO_INPUT = "#42526E"
+COLOR_ERROR = "#DE350B"
 
 
 def mostrar_dialogo_tarjeta(
@@ -31,7 +32,7 @@ def mostrar_dialogo_tarjeta(
     """
     dialogo = tk.Toplevel(parent)
     dialogo.title(titulo)
-    dialogo.geometry("480x360")
+    dialogo.geometry("480x400")
     dialogo.transient(parent)
     dialogo.grab_set()
     dialogo.resizable(False, False)
@@ -137,11 +138,34 @@ def mostrar_dialogo_tarjeta(
 
     frame.grid_columnconfigure(0, weight=1)
 
+    # Mensaje de error para validaciones
+    lbl_error = tk.Label(
+        frame,
+        text="El título es obligatorio.",
+        font=("Segoe UI", 9, "italic"),
+        bg=COLOR_FONDO_DIALOG,
+        fg=COLOR_ERROR,
+        anchor="w",
+    )
+    lbl_error.grid(row=6, column=0, sticky="w", pady=(0, 12))
+    lbl_error.grid_remove()
+
+    def mostrar_error(mensaje: str):
+        lbl_error.configure(text=mensaje)
+        lbl_error.grid()
+        entrada_titulo.configure(highlightbackground=COLOR_ERROR, highlightthickness=2)
+
+    def ocultar_error():
+        lbl_error.grid_remove()
+        entrada_titulo.configure(highlightbackground=COLOR_BORDE_INPUT, highlightthickness=1)
+
     def aceptar():
         nonlocal resultado
         titulo_texto = entrada_titulo.get().strip()
         if not titulo_texto:
+            mostrar_error("El título es obligatorio.")
             return
+        ocultar_error()
         texto_columna = columna_seleccionada.get()
         columna_id = texto_a_id.get(texto_columna, "por_hacer")
         resultado = {
@@ -153,6 +177,8 @@ def mostrar_dialogo_tarjeta(
 
     def cancelar():
         dialogo.destroy()
+
+    entrada_titulo.bind("<KeyRelease>", lambda e: ocultar_error() if entrada_titulo.get().strip() else None)
 
     # Botones
     frame_botones = tk.Frame(dialogo, bg=COLOR_FONDO_DIALOG)

@@ -13,6 +13,7 @@ COLOR_TEXTO_TITULO = "#172B4D"
 COLOR_TEXTO_DESCRIPCION = "#5E6C84"
 COLOR_SOMBRA = "#C1C7D0"
 COLOR_RESALTADO = "#0052CC"
+COLOR_RESALTADO_COLUMNA = "#4C9AFF"
 
 
 class CardView(tk.Frame):
@@ -179,6 +180,7 @@ class CardView(tk.Frame):
         x = evento.x_root - (self._ghost.winfo_width() // 2)
         y = evento.y_root - 10
         self._ghost.geometry(f"+{x}+{y}")
+        self._resaltar_columna_bajo_cursor(evento.x_root, evento.y_root)
 
     def _soltar(self, evento: tk.Event):
         if not self._dragging:
@@ -194,6 +196,7 @@ class CardView(tk.Frame):
             self._ghost = None
 
         destino = self.winfo_containing(x_root, y_root)
+        self._limpiar_resaltado_columnas()
         columna = self._buscar_columna(destino)
         if columna and columna != self.tarjeta.columna:
             self._mover_a_columna(columna)
@@ -245,6 +248,30 @@ class CardView(tk.Frame):
 
             actual = actual._nametowidget(parent_name)
         return None
+
+    def _resaltar_columna_bajo_cursor(self, x_root: int, y_root: int):
+        """Resalta la columna que está bajo el cursor durante el arrastre."""
+        self._limpiar_resaltado_columnas()
+        destino = self.winfo_containing(x_root, y_root)
+        columna_id = self._buscar_columna(destino)
+        if columna_id is None:
+            return
+        board = self._buscar_board()
+        if board is None:
+            return
+        columna = board._columnas.get(columna_id)
+        if columna is not None and columna_id != self.tarjeta.columna:
+            columna.resaltar(True)
+            self._columna_resaltada = columna
+
+    def _limpiar_resaltado_columnas(self):
+        """Quita el resaltado de todas las columnas."""
+        board = self._buscar_board()
+        if board is None:
+            return
+        for columna in board._columnas.values():
+            columna.resaltar(False)
+        self._columna_resaltada = None
 
     def _editar(self):
         if self._on_editar:

@@ -1,9 +1,10 @@
 """Vista del tablero Kanban."""
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import messagebox, ttk
 
 from app.models.tarjeta import Tarjeta
+from app.services.tarjeta_service import TarjetaService
 from app.views.column_view import ColumnView
 from app.views.dialogs import mostrar_dialogo_tarjeta
 
@@ -19,14 +20,14 @@ COLOR_FONDO_BOARD = "#FFFFFF"
 
 
 class BoardView(tk.Frame):
-    """Representación visual del tablero con 3 columnas y tarjetas dummy."""
+    """Representación visual del tablero con 3 columnas y persistencia."""
 
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
-        self._tarjetas: list[Tarjeta] = []
+        self._service = TarjetaService()
         self._columnas: dict[str, ColumnView] = {}
         self._construir_ui()
-        self._cargar_tarjetas_dummy()
+        self._cargar_tarjetas()
 
     def _construir_ui(self):
         self.configure(bg=COLOR_FONDO_BOARD)
@@ -57,13 +58,8 @@ class BoardView(tk.Frame):
         )
         btn_nueva.pack(side="left", padx=8)
 
-    def _cargar_tarjetas_dummy(self):
-        """Carga datos de prueba para visualizar el tablero."""
-        self._tarjetas = [
-            Tarjeta(id=1, titulo="Tarea 1", descripcion="Descripción inicial", columna="por_hacer"),
-            Tarjeta(id=2, titulo="Tarea 2", descripcion="En progreso", columna="en_proceso"),
-            Tarjeta(id=3, titulo="Tarea 3", descripcion="Finalizada", columna="hecho"),
-        ]
+    def _cargar_tarjetas(self):
+        """Carga las tarjetas desde el servicio y las muestra en el tablero."""
         self._refrescar_tablero()
 
     def _refrescar_tablero(self):
@@ -71,42 +67,47 @@ class BoardView(tk.Frame):
         for columna in self._columnas.values():
             columna.limpiar()
 
-        for tarjeta in self._tarjetas:
-            columna = self._columnas.get(tarjeta.columna)
-            if columna:
-                columna.agregar_tarjeta(tarjeta)
+        for columna_id, _ in COLUMNAS:
+            for tarjeta in self._service.listar_tarjetas(columna_id):
+                self._columnas[columna_id].agregar_tarjeta(tarjeta)
 
     def _mover_tarjeta(self, tarjeta: Tarjeta, columna_destino: str):
-        """Mueve una tarjeta a otra columna."""
+        """Mueve una tarjeta a otra columna y persiste el cambio."""
         if columna_destino not in self._columnas:
             return
-        tarjeta.columna = columna_destino
+        self._service.mover_tarjeta(tarjeta.id, columna_destino)
         self._refrescar_tablero()
 
     def _crear_tarjeta(self):
-        """Abre el diálogo para crear una nueva tarjeta."""
+        """Abre el diálogo para crear una nueva tarjeta y la persiste."""
         resultado = mostrar_dialogo_tarjeta(self)
         if resultado:
-            nuevo_id = max((t.id for t in self._tarjetas), default=0) + 1
-            nueva_tarjeta = Tarjeta(
-                id=nuevo_id,
+            self._service.crear_tarjeta(
                 titulo=resultado["titulo"],
                 descripcion=resultado["descripcion"],
                 columna=resultado.get("columna", "por_hacer"),
             )
-            self._tarjetas.append(nueva_tarjeta)
             self._refrescar_tablero()
 
     def _editar_tarjeta(self, tarjeta: Tarjeta):
-        """Abre el diálogo para editar una tarjeta existente."""
+        """Abre el diálogo para editar una tarjeta existente y persiste los cambios."""
         resultado = mostrar_dialogo_tarjeta(self, titulo="Editar tarjeta", tarjeta=tarjeta)
         if resultado:
-            tarjeta.titulo = resultado["titulo"]
-            tarjeta.descripcion = resultado["descripcion"]
-            tarjeta.columna = resultado.get("columna", tarjeta.columna)
+            self._service.actualizar_tarjeta(
+                tarjeta_id=tarjeta.id,
+                titulo=resultado["titulo"],
+                descripcion=resultado["descripcion"],
+                columna=resultado.get("columna", tarjeta.columna),
+            )
             self._refrescar_tablero()
 
     def _eliminar_tarjeta(self, tarjeta: Tarjeta):
-        """Elimina una tarjeta del tablero."""
-        self._tarjetas = [t for t in self._tarjetas if t.id != tarjeta.id]
-        self._refrescar_tablero()
+        """Elimina una tarjeta del tablero y de la base de datos tras confirmar."""
+        respuesta = messagebox.askyesno(
+            "Confirmar eliminación",
+            f"¿Eliminar la tarjeta \"{tarjeta.titulo}\"?\nEsta acción no se puede deshacer.",
+            icon="warning",
+        )
+        if respuesta:
+            self._service.eliminar_tarjeta(tarjeta.id)
+            self._refrescar_tablero()

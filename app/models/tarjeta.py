@@ -15,5 +15,4 @@ class Tarjeta:
     def __post_init__(self):
         if self.id is not None and self.id < 0:
             raise ValueError("El id debe ser mayor o igual a cero")
-        if self.id is None:
-            self.id = 0
+        # id == None indica una tarjeta aún no persistida en la base de datos.

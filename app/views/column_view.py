@@ -13,6 +13,7 @@ COLOR_BORDE_COLUMNA = "#DFE1E6"
 COLOR_FONDO_ENCABEZADO = "#EBECF0"
 COLOR_TEXTO_ENCABEZADO = "#172B4D"
 COLOR_SCROLLBAR = "#C1C7D0"
+COLOR_RESALTADO_COLUMNA = "#4C9AFF"
 
 
 class ColumnView(tk.Frame):
@@ -78,6 +79,17 @@ class ColumnView(tk.Frame):
             bg=COLOR_FONDO_COLUMNA,
         )
         self._canvas.grid(row=0, column=0, sticky="nsew")
+
+        # Panel interno para resaltar el área de tarjetas durante drag & drop
+        self._resaltado_frame = tk.Frame(
+            self,
+            bg=COLOR_FONDO_COLUMNA,
+            highlightbackground=COLOR_RESALTADO_COLUMNA,
+            highlightthickness=0,
+        )
+        self._resaltado_frame.grid(row=1, column=0, sticky="nsew", padx=8, pady=8)
+        self._resaltado_frame.lower(self._canvas)
+        self._resaltado_frame.grid_remove()
 
         scrollbar = tk.Scrollbar(
             canvas_frame,
@@ -146,3 +158,10 @@ class ColumnView(tk.Frame):
         """Notifica al board que la tarjeta debe moverse a esta columna."""
         if self._on_mover_tarjeta:
             self._on_mover_tarjeta(card.tarjeta, self._columna_id)
+
+    def resaltar(self, activo: bool):
+        """Activa o desactiva el resaltado de la columna como zona de drop."""
+        if activo:
+            self.configure(highlightbackground=COLOR_RESALTADO_COLUMNA, highlightthickness=2)
+        else:
+            self.configure(highlightbackground=COLOR_BORDE_COLUMNA, highlightthickness=1)
